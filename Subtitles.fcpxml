@@ -1,0 +1,12 @@
+<!DOCTYPE fcpxml>
+<fcpxml version="1.11">
+  <resources>
+    <format id="r1" name="FFVideoFormat1080p25"/>
+    <effect id="r2" name="Basic Title" uid=".../Titles.localized/Bumper:Opener.localized/Basic Title.localized/Basic Title.moti"/>
+  </resources>
+  <project name="Subtitles">
+    <sequence format="r1">
+      <spine/>
+    </sequence>
+  </project>
+</fcpxml>
