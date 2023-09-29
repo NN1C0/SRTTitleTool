@@ -42,7 +42,7 @@ def build_base_XML():
 
     return outline
 
-def writeFCPXML(content, path="Subtitles.fcpxml"):
+def writeFCPXML(content, path="Output/Subtitles.fcpxml"):
     f = open(path, "wb")
     f.write(content)
     f.close()
