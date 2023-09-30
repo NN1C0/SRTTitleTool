@@ -1,12 +1,19 @@
 # SRT to Final Cut Pro X
-Can be used to convert SRT subtitles files to an FCPX timeline. Creates a new fcpxml that can be importet into FCPX.
+Because the subtitle support in Apples Final Cut Pro has been lacking any attention of the developer team for the last 15 years, this tool can do what you want to do ✨*editable styles for subtitles*✨. 
+Use it to convert a SubRip subtitle file to basic titles in Final Cut.
+Works by creating a fcpxml which you can import into Final Cut. Copy all titles and paste them into your working timeline.
 
 ## Requirements
 Requires [LXML](https://pypi.org/project/lxml/) and [SRT](https://pypi.org/project/srt/)
+```
+$ pip install lxml
+$ pip install srt
+```
+
 
 ## Usage
 
-`python SRT_to_FCPXML.py`
+`$ python SRT_to_FCPXML.py`
 
 ```
 -i --input      Path to subtitle.srt [default=input/subtitles.srt]
