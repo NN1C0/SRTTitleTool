@@ -10,11 +10,12 @@ def parse_args():
     """ parse arguments out of sys.argv """
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=RawTextHelpFormatter)
-    parser.add_argument(
+    parser.add_argument(#TODO: Implement input file path and check for existence
         '-i',
         '--input',
         type=str,
         required=False,
+        default='input/subtitles.srt',
         help='SRT file to read'
     )
     parser.add_argument(
@@ -22,16 +23,26 @@ def parse_args():
         '--output',
         type=str,
         required=False,
+        default='output/Subtitles.fcpxml',
         help="Timeline file to write out."
+    )
+    parser.add_argument(
+        '-f',
+        '--framerate',
+        type=int,
+        required=False,
+        default=25,
+        help="Target framerate"
+
     )
     return parser.parse_args()
 
 
-def buildBaseXML(subtitles):
+def buildBaseXML(subtitles, fps):
     outline = (
         E.fcpxml(
             E.resources(
-                E.format(id="r1", name="FFVideoFormat1080p25"),
+                E.format(id="r1", name="FFVideoFormat1080p"+str(fps)),
                 E.effect(id="r2", name="Basic Title", uid=".../Titles.localized/Bumper:Opener.localized/Basic Title.localized/Basic Title.moti"),
             ),
             E.project(
@@ -39,7 +50,7 @@ def buildBaseXML(subtitles):
                     E.spine(
                         E.gap(
                         
-                        name="Gap", duration=convertSecondsToFCPXseconds(getSubtitlesTotalDuration(subtitles)))
+                        name="Gap", duration=convertSecondsToFCPXseconds(getSubtitlesTotalDuration(subtitles), 25))
                     ),
                 format="r1"),
             name="Subtitles"),
@@ -47,7 +58,7 @@ def buildBaseXML(subtitles):
     )
     return ET.tostring(outline)
 
-def addSubtiltesToXML(xmlOutline, subs): #Try this: https://stackoverflow.com/questions/75397711/lxml-create-multiple-tags-while-looping-through-a-list-in-csv
+def addSubtiltesToXML(xmlOutline, subs):
     xmlString = ET.fromstring(xmlOutline)
     timelineRoot = xmlString.find(".//gap")
 
@@ -56,7 +67,7 @@ def addSubtiltesToXML(xmlOutline, subs): #Try this: https://stackoverflow.com/qu
             E('text',
                 E('text-style', s.content, ref="ts1"),
             ),
-            ref="r2", lane="1", offset=SRTTimeToFCPXseconds(s.start, 25), start=SRTTimeToFCPXseconds(s.start, 25), duration=convertSecondsToFCPXseconds(getSubtitleDuration(s)))
+            ref="r2", lane="1", offset=SRTTimeToFCPXseconds(s.start, 25), start=SRTTimeToFCPXseconds(s.start, 25), duration=convertSecondsToFCPXseconds(getSubtitleDuration(s), 25))
         )
     #Attach the text style. Can only be in the defined once in the XML
     timelineRoot.find(".//title").append(
@@ -66,7 +77,7 @@ def addSubtiltesToXML(xmlOutline, subs): #Try this: https://stackoverflow.com/qu
     return xmlString
 
 
-def writeFCPXML(content, path="Output/Subtitles.fcpxml"):
+def writeFCPXML(content, path):
     f = open(path, "wb")
     f.write(content)
     f.close()
@@ -75,9 +86,12 @@ def srtToString(subtitlesObject):
     return srt.compose(subtitlesObject)
 
 def parseSRTFile(srtPath):
-    with open(srtPath) as f:
-        data = f.read()
-    return list(srt.parse(data))
+    try:
+        with open(srtPath) as f:
+            data = f.read()
+            return list(srt.parse(data))
+    except FileNotFoundError:
+        raise Exception("No input file found for given path.")
 
 def getSubtitlesTotalDuration(subs):
     return subs[-1].end.total_seconds()
@@ -85,31 +99,31 @@ def getSubtitlesTotalDuration(subs):
 def getSubtitleDuration(sub):
     return (sub.end - sub.start).total_seconds()
 
-def convertSecondsToFCPXseconds(s):
-    frac = Fraction(roundToMultipe(s, 0.04)).limit_denominator(100000)
+def convertSecondsToFCPXseconds(s, fps):
+    multiplier = fpsToMultiplier(fps)
+    frac = Fraction(roundToMultipe(s, multiplier)).limit_denominator(100000)
     return str(frac.numerator) + "/" + str(frac.denominator) + "s"
 
-def SRTTimeToFCPXseconds(s, fr):
-    return convertSecondsToFCPXseconds(s.total_seconds())
+def SRTTimeToFCPXseconds(s, fps):
+    return convertSecondsToFCPXseconds(s.total_seconds(), fps)
 
 def roundToMultipe(s,m):
     return round(s / m) * m
 
+def fpsToMultiplier(fps):
+    return round(1/fps, 4)
+
 def main():
     args = parse_args()
+    subtitles = parseSRTFile(args.input)
+    outputFile = args.output
+    fps = args.framerate
     
-    if(not args.input):
-        subtitles = parseSRTFile("input/example.srt")
-    else:
-        subtitles = parseSRTFile(args.input)
-
-    
-    xml = buildBaseXML(subtitles)
+    xml = buildBaseXML(subtitles, fps)
     populatedXML = addSubtiltesToXML(xml, subtitles)
-    #print(ET.tostring(populatedXML))
 
     xml = ET.tostring(populatedXML, encoding="UTF-8", doctype="<!DOCTYPE fcpxml>", pretty_print=True)
-    writeFCPXML(xml)
+    writeFCPXML(xml, outputFile)
 
 
 if __name__ == '__main__':
