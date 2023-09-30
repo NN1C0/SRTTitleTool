@@ -23,7 +23,7 @@ def parse_args():
         '--output',
         type=str,
         required=False,
-        default='output/Subtitles.fcpxml',
+        default='output/subtitles.fcpxml',
         help="Timeline file to write out."
     )
     parser.add_argument(
@@ -92,6 +92,9 @@ def parseSRTFile(srtPath):
             return list(srt.parse(data))
     except FileNotFoundError:
         raise Exception("No input file found for given path.")
+    except srt.SRTParseError:
+        raise Exception("SRT file not suitable. Check formatting etc.")
+
 
 def getSubtitlesTotalDuration(subs):
     return subs[-1].end.total_seconds()
