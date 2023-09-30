@@ -1,5 +1,5 @@
 .venv
 .DS_Store
 .gitignore
-Input/
-Output/
+Input/*
+Output/*
